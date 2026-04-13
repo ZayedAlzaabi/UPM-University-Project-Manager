@@ -239,6 +239,7 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
     try {
       const attachment = await uploadAttachment(task.id, file)
       setAttachments((prev) => [attachment, ...prev])
+      onUpdated({ ...task, _count: { ...task._count, attachments: (task._count?.attachments ?? 0) + 1 } })
       toast.success('File uploaded')
     } catch (err) {
       toast.error(err.message)
@@ -252,6 +253,7 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
     try {
       await deleteAttachment(attachmentId)
       setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
+      onUpdated({ ...task, _count: { ...task._count, attachments: Math.max((task._count?.attachments ?? 1) - 1, 0) } })
       toast.success('Attachment deleted')
     } catch (err) {
       toast.error(err.message)
@@ -482,7 +484,8 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
                     <div className="min-w-0">
                       <p className="text-xs font-medium truncate max-w-[140px]" title={a.fileName}>{a.fileName}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {formatFileSize(a.fileSize)}
+                        {a.fileName.includes('.') ? a.fileName.split('.').pop().toUpperCase() : '—'}
+                        {' · '}{formatFileSize(a.fileSize)}
                         {a.uploader && ` · ${a.uploader.name}`}
                       </p>
                     </div>
