@@ -1,15 +1,18 @@
 const router = require('express').Router();
 const prisma = require('../lib/prisma');
 const { authenticate, requireRole } = require('../middleware/auth');
+const ERRORS = require('../../../shared/errors.json');
 
-// PATCH /tasks/:id — any group member can update any field; instructor (course owner) can also update
+const VALID_STATUSES = ['TODO', 'IN_PROGRESS', 'DONE'];
+
+// PATCH /tasks/:id — any group member can update; instructor (course owner) can also update
 router.patch('/:id', authenticate, async (req, res) => {
   const taskId = req.params.id;
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: { group: { include: { course: true } } },
   });
-  if (!task) return res.status(404).json({ error: 'Task not found' });
+  if (!task) return res.status(404).json({ error: ERRORS.TASK_NOT_FOUND });
 
   const { groupId } = task;
   const isGroupInstructor =
@@ -20,17 +23,25 @@ router.patch('/:id', authenticate, async (req, res) => {
   });
 
   if (!membership && !isGroupInstructor) {
-    return res.status(403).json({ error: 'Forbidden' });
+    return res.status(403).json({ error: ERRORS.FORBIDDEN });
   }
 
   const { title, description, dueDate, assigneeId, status } = req.body;
+
+  if (status !== undefined && !VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ error: ERRORS.INVALID_STATUS });
+  }
+
+  if (dueDate !== undefined && dueDate !== null && isNaN(Date.parse(dueDate))) {
+    return res.status(400).json({ error: 'Due date must be a valid date.' });
+  }
 
   if (assigneeId !== undefined && assigneeId !== null) {
     const assigneeMembership = await prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId, userId: assigneeId } },
     });
     if (!assigneeMembership) {
-      return res.status(400).json({ error: 'Assignee must be a member of this group' });
+      return res.status(400).json({ error: ERRORS.ASSIGNEE_NOT_MEMBER });
     }
   }
 
@@ -38,8 +49,8 @@ router.patch('/:id', authenticate, async (req, res) => {
     where: { id: taskId },
     data: {
       ...(status !== undefined && { status }),
-      ...(title !== undefined && { title }),
-      ...(description !== undefined && { description }),
+      ...(title !== undefined && { title: title.trim() }),
+      ...(description !== undefined && { description: description?.trim() ?? null }),
       ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
       ...(assigneeId !== undefined && { assigneeId: assigneeId ?? null }),
     },
@@ -54,12 +65,12 @@ router.patch('/:id', authenticate, async (req, res) => {
 router.delete('/:id', authenticate, requireRole('STUDENT'), async (req, res) => {
   const taskId = req.params.id;
   const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (!task) return res.status(404).json({ error: 'Task not found' });
+  if (!task) return res.status(404).json({ error: ERRORS.TASK_NOT_FOUND });
 
   const membership = await prisma.groupMember.findUnique({
     where: { groupId_userId: { groupId: task.groupId, userId: req.user.id } },
   });
-  if (!membership) return res.status(403).json({ error: 'You are not a member of this group' });
+  if (!membership) return res.status(403).json({ error: ERRORS.FORBIDDEN });
 
   await prisma.task.delete({ where: { id: taskId } });
   res.status(204).send();
@@ -72,8 +83,8 @@ router.get('/:id/comments', authenticate, async (req, res) => {
     where: { id: taskId },
     include: { group: { include: { course: true } } },
   });
-  if (!task) return res.status(404).json({ error: 'Task not found' });
-  if (!(await canAccessTask(req.user, task))) return res.status(403).json({ error: 'Forbidden' });
+  if (!task) return res.status(404).json({ error: ERRORS.TASK_NOT_FOUND });
+  if (!(await canAccessTask(req.user, task))) return res.status(403).json({ error: ERRORS.FORBIDDEN });
 
   const comments = await prisma.comment.findMany({
     where: { taskId },
@@ -90,14 +101,14 @@ router.post('/:id/comments', authenticate, requireRole('INSTRUCTOR'), async (req
     where: { id: taskId },
     include: { group: { include: { course: true } } },
   });
-  if (!task) return res.status(404).json({ error: 'Task not found' });
-  if (task.group.course.instructorId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+  if (!task) return res.status(404).json({ error: ERRORS.TASK_NOT_FOUND });
+  if (task.group.course.instructorId !== req.user.id) return res.status(403).json({ error: ERRORS.FORBIDDEN });
 
   const { body } = req.body;
-  if (!body) return res.status(400).json({ error: 'body is required' });
+  if (!body?.trim()) return res.status(400).json({ error: ERRORS.BODY_REQUIRED });
 
   const comment = await prisma.comment.create({
-    data: { body, taskId, authorId: req.user.id },
+    data: { body: body.trim(), taskId, authorId: req.user.id },
     include: { author: { select: { id: true, name: true, email: true, role: true } } },
   });
   res.status(201).json(comment);

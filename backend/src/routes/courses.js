@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const prisma = require('../lib/prisma');
 const { authenticate, requireRole } = require('../middleware/auth');
+const ERRORS = require('../../../shared/errors.json');
 
 // GET /courses
 // Instructor: their courses. Student: courses of groups they belong to.
@@ -38,12 +39,18 @@ router.get('/', authenticate, async (req, res) => {
 // POST /courses — instructor only
 router.post('/', authenticate, requireRole('INSTRUCTOR'), async (req, res) => {
   const { name, semester, year } = req.body;
-  if (!name || !semester || !year) {
-    return res.status(400).json({ error: 'name, semester, and year are required' });
+
+  if (!name?.trim() || !semester?.trim() || !year) {
+    return res.status(400).json({ error: ERRORS.MISSING_FIELDS });
+  }
+
+  const parsedYear = Number(year);
+  if (!Number.isInteger(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
+    return res.status(400).json({ error: 'Year must be a valid number between 2000 and 2100.' });
   }
 
   const course = await prisma.course.create({
-    data: { name, semester, year: Number(year), instructorId: req.user.id },
+    data: { name: name.trim(), semester: semester.trim(), year: parsedYear, instructorId: req.user.id },
   });
   res.status(201).json(course);
 });
@@ -55,8 +62,8 @@ router.get('/:id', authenticate, async (req, res) => {
     where: { id: courseId },
     include: { instructor: { select: { id: true, name: true, email: true } } },
   });
-  if (!course) return res.status(404).json({ error: 'Course not found' });
-  if (!(await canAccessCourse(req.user, courseId))) return res.status(403).json({ error: 'Forbidden' });
+  if (!course) return res.status(404).json({ error: ERRORS.COURSE_NOT_FOUND });
+  if (!(await canAccessCourse(req.user, courseId))) return res.status(403).json({ error: ERRORS.FORBIDDEN });
   res.json(course);
 });
 
@@ -64,8 +71,8 @@ router.get('/:id', authenticate, async (req, res) => {
 router.get('/:id/groups', authenticate, async (req, res) => {
   const courseId = req.params.id;
   const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course) return res.status(404).json({ error: 'Course not found' });
-  if (!(await canAccessCourse(req.user, courseId))) return res.status(403).json({ error: 'Forbidden' });
+  if (!course) return res.status(404).json({ error: ERRORS.COURSE_NOT_FOUND });
+  if (!(await canAccessCourse(req.user, courseId))) return res.status(403).json({ error: ERRORS.FORBIDDEN });
 
   const groups = await prisma.group.findMany({
     where: { courseId },
@@ -82,19 +89,23 @@ router.get('/:id/groups', authenticate, async (req, res) => {
 router.post('/:id/groups', authenticate, requireRole('INSTRUCTOR'), async (req, res) => {
   const courseId = req.params.id;
   const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course) return res.status(404).json({ error: 'Course not found' });
-  if (course.instructorId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+  if (!course) return res.status(404).json({ error: ERRORS.COURSE_NOT_FOUND });
+  if (course.instructorId !== req.user.id) return res.status(403).json({ error: ERRORS.FORBIDDEN });
 
   const { name, projectTitle, projectDesc, deadline } = req.body;
-  if (!name || !projectTitle) {
-    return res.status(400).json({ error: 'name and projectTitle are required' });
+  if (!name?.trim() || !projectTitle?.trim()) {
+    return res.status(400).json({ error: 'Group name and project title are required.' });
+  }
+
+  if (deadline && isNaN(Date.parse(deadline))) {
+    return res.status(400).json({ error: 'Deadline must be a valid date.' });
   }
 
   const group = await prisma.group.create({
     data: {
-      name,
-      projectTitle,
-      projectDesc: projectDesc ?? null,
+      name: name.trim(),
+      projectTitle: projectTitle.trim(),
+      projectDesc: projectDesc?.trim() ?? null,
       deadline: deadline ? new Date(deadline) : null,
       courseId,
     },

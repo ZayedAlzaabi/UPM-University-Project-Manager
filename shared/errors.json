@@ -1,0 +1,29 @@
+{
+  "MISSING_FIELDS":          "All required fields must be filled in.",
+  "INVALID_ROLE":            "Role must be STUDENT or INSTRUCTOR.",
+  "INVALID_EMAIL":           "Please enter a valid email address.",
+  "WEAK_PASSWORD":           "Password must be at least 8 characters.",
+  "EMAIL_TAKEN":             "An account with this email already exists.",
+  "INVALID_CREDENTIALS":     "Incorrect email or password.",
+
+  "UNAUTHORIZED":            "You must be logged in to continue.",
+  "FORBIDDEN":               "You do not have permission to do this.",
+
+  "COURSE_NOT_FOUND":        "Course not found.",
+  "GROUP_NOT_FOUND":         "Group not found.",
+  "TASK_NOT_FOUND":          "Task not found.",
+  "USER_NOT_FOUND":          "No user found with that email or ID.",
+  "REQUEST_NOT_FOUND":       "Support request not found.",
+
+  "ALREADY_MEMBER":          "This student is already in the group.",
+  "NOT_STUDENT":             "Only students can be added as group members.",
+  "ASSIGNEE_NOT_MEMBER":     "The assignee must be a member of this group.",
+  "INVALID_STATUS":          "Status must be TODO, IN_PROGRESS, or DONE.",
+  "INVALID_REQUEST_STATUS":  "Request status must be OPEN or RESOLVED.",
+  "TITLE_REQUIRED":          "Task title is required.",
+  "BODY_REQUIRED":           "Comment body cannot be empty.",
+  "MESSAGE_REQUIRED":        "Support request message cannot be empty.",
+  "USER_ID_OR_EMAIL":        "Provide either a userId or an email.",
+
+  "SERVER_ERROR":            "Something went wrong. Please try again."
+}

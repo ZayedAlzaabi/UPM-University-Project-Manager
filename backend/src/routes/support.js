@@ -1,6 +1,9 @@
 const router = require('express').Router();
 const prisma = require('../lib/prisma');
 const { authenticate, requireRole } = require('../middleware/auth');
+const ERRORS = require('../../../shared/errors.json');
+
+const VALID_REQUEST_STATUSES = ['OPEN', 'RESOLVED'];
 
 // POST /tasks/:id/support-requests — student, must be group member
 router.post('/tasks/:taskId/support-requests', authenticate, requireRole('STUDENT'), async (req, res) => {
@@ -9,18 +12,18 @@ router.post('/tasks/:taskId/support-requests', authenticate, requireRole('STUDEN
     where: { id: taskId },
     include: { group: true },
   });
-  if (!task) return res.status(404).json({ error: 'Task not found' });
+  if (!task) return res.status(404).json({ error: ERRORS.TASK_NOT_FOUND });
 
   const membership = await prisma.groupMember.findUnique({
     where: { groupId_userId: { groupId: task.groupId, userId: req.user.id } },
   });
-  if (!membership) return res.status(403).json({ error: 'You are not a member of this group' });
+  if (!membership) return res.status(403).json({ error: ERRORS.FORBIDDEN });
 
   const { message } = req.body;
-  if (!message) return res.status(400).json({ error: 'message is required' });
+  if (!message?.trim()) return res.status(400).json({ error: ERRORS.MESSAGE_REQUIRED });
 
   const request = await prisma.supportRequest.create({
-    data: { message, taskId, authorId: req.user.id },
+    data: { message: message.trim(), taskId, authorId: req.user.id },
     include: {
       author: { select: { id: true, name: true, email: true } },
       replies: { include: { author: { select: { id: true, name: true, email: true } } } },
@@ -36,18 +39,17 @@ router.get('/tasks/:taskId/support-requests', authenticate, async (req, res) => 
     where: { id: taskId },
     include: { group: { include: { course: true } } },
   });
-  if (!task) return res.status(404).json({ error: 'Task not found' });
+  if (!task) return res.status(404).json({ error: ERRORS.TASK_NOT_FOUND });
 
   const isGroupInstructor =
     req.user.role === 'INSTRUCTOR' && task.group.course.instructorId === req.user.id;
 
   let where = { taskId };
   if (!isGroupInstructor) {
-    // Students only see their own requests
     const membership = await prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId: task.groupId, userId: req.user.id } },
     });
-    if (!membership) return res.status(403).json({ error: 'Forbidden' });
+    if (!membership) return res.status(403).json({ error: ERRORS.FORBIDDEN });
     where.authorId = req.user.id;
   }
 
@@ -72,34 +74,38 @@ router.post('/support-requests/:requestId/reply', authenticate, requireRole('INS
     where: { id: requestId },
     include: { task: { include: { group: { include: { course: true } } } } },
   });
-  if (!request) return res.status(404).json({ error: 'Support request not found' });
+  if (!request) return res.status(404).json({ error: ERRORS.REQUEST_NOT_FOUND });
   if (request.task.group.course.instructorId !== req.user.id) {
-    return res.status(403).json({ error: 'Forbidden' });
+    return res.status(403).json({ error: ERRORS.FORBIDDEN });
   }
 
   const { body } = req.body;
-  if (!body) return res.status(400).json({ error: 'body is required' });
+  if (!body?.trim()) return res.status(400).json({ error: ERRORS.BODY_REQUIRED });
 
   const reply = await prisma.supportReply.create({
-    data: { body, requestId, authorId: req.user.id },
+    data: { body: body.trim(), requestId, authorId: req.user.id },
     include: { author: { select: { id: true, name: true, email: true } } },
   });
   res.status(201).json(reply);
 });
 
-// PATCH /support-requests/:id — instructor: mark resolved
+// PATCH /support-requests/:id — instructor: update status
 router.patch('/support-requests/:requestId', authenticate, requireRole('INSTRUCTOR'), async (req, res) => {
   const { requestId } = req.params;
   const request = await prisma.supportRequest.findUnique({
     where: { id: requestId },
     include: { task: { include: { group: { include: { course: true } } } } },
   });
-  if (!request) return res.status(404).json({ error: 'Support request not found' });
+  if (!request) return res.status(404).json({ error: ERRORS.REQUEST_NOT_FOUND });
   if (request.task.group.course.instructorId !== req.user.id) {
-    return res.status(403).json({ error: 'Forbidden' });
+    return res.status(403).json({ error: ERRORS.FORBIDDEN });
   }
 
   const { status } = req.body;
+  if (status !== undefined && !VALID_REQUEST_STATUSES.includes(status)) {
+    return res.status(400).json({ error: ERRORS.INVALID_REQUEST_STATUS });
+  }
+
   const updated = await prisma.supportRequest.update({
     where: { id: requestId },
     data: { status },
@@ -114,7 +120,6 @@ router.patch('/support-requests/:requestId', authenticate, requireRole('INSTRUCT
 // GET /notifications — role-aware
 router.get('/notifications', authenticate, async (req, res) => {
   if (req.user.role === 'INSTRUCTOR') {
-    // All open support requests from groups in their courses
     const requests = await prisma.supportRequest.findMany({
       where: {
         status: 'OPEN',

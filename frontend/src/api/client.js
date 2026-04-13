@@ -1,4 +1,5 @@
 import axios from 'axios'
+import ERRORS from '@shared/errors.json'
 
 const client = axios.create({ baseURL: 'https://upm-university-project-manager.onrender.com' })
 
@@ -15,7 +16,13 @@ client.interceptors.response.use(
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
+      return Promise.reject(err)
     }
+
+    // Normalize: give every error a clean .message for toast display
+    const serverMessage = err.response?.data?.error
+    err.message = serverMessage ?? ERRORS.SERVER_ERROR
+
     return Promise.reject(err)
   }
 )
