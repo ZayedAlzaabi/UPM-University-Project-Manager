@@ -152,6 +152,7 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
     })
     setEditing(false)
     setShowSupportForm(false)
+    setPreviewImage(null)
     Promise.all([
       getComments(task.id).catch(() => []),
       getSupportRequests(task.id).catch(() => []),
