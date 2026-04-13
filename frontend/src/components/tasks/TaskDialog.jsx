@@ -480,7 +480,7 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
                       <FileIcon mimeType={a.mimeType} />
                     )}
                     <div className="min-w-0">
-                      <p className="text-xs font-medium truncate">{a.fileName}</p>
+                      <p className="text-xs font-medium truncate max-w-[140px]" title={a.fileName}>{a.fileName}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {formatFileSize(a.fileSize)}
                         {a.uploader && ` · ${a.uploader.name}`}
@@ -562,8 +562,13 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
       {/* Image preview dialog */}
       {previewImage && (
         <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-          <DialogContent className="max-w-2xl p-2">
-            <img src={previewImage} alt="Preview" className="w-full h-auto rounded" />
+          <DialogContent className="max-w-4xl w-full p-4">
+            <DialogHeader>
+              <DialogTitle className="text-sm font-medium">Image Preview</DialogTitle>
+            </DialogHeader>
+            <div className="relative">
+              <img src={previewImage} alt="Preview" className="w-full h-auto rounded max-h-[75vh] object-contain" />
+            </div>
           </DialogContent>
         </Dialog>
       )}
