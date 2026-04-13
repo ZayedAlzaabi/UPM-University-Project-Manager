@@ -36,3 +36,6 @@ Thumbs.db
 
 # Prisma
 backend/prisma/migrations/**/migration_lock.toml
+
+# Claude Code
+.claude/
