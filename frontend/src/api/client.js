@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const client = axios.create({ baseURL: '/' })
+const client = axios.create({ baseURL: 'https://upm-university-project-manager.onrender.com' })
 
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
