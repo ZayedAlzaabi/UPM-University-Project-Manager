@@ -43,14 +43,21 @@ export default function Navbar() {
     if (!user) return
     getNotifications()
       .then((data) => {
+        const lastViewed = localStorage.getItem(`lastNotificationViewedAt_${user.id}`)
+        const cutoff = lastViewed ? new Date(lastViewed) : new Date(0)
         if (user.role === 'INSTRUCTOR') {
-          setUnreadCount(data.supportRequests?.length ?? 0)
+          setUnreadCount(
+            (data.supportRequests ?? []).filter((sr) => new Date(sr.createdAt) > cutoff).length
+          )
         } else {
-          setUnreadCount((data.replies?.length ?? 0) + (data.comments?.length ?? 0))
+          setUnreadCount(
+            (data.replies ?? []).filter((r) => new Date(r.createdAt) > cutoff).length +
+            (data.comments ?? []).filter((c) => new Date(c.createdAt) > cutoff).length
+          )
         }
       })
       .catch(() => {})
-  }, [user])
+  }, [user, pathname])
 
   const handleLogout = () => {
     logout()

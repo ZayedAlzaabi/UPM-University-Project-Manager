@@ -7,6 +7,7 @@ const courseRoutes  = require('./routes/courses');
 const groupRoutes   = require('./routes/groups');
 const taskRoutes    = require('./routes/tasks');
 const supportRoutes = require('./routes/support');
+const attachmentRoutes = require('./routes/attachments');
 
 const app = express();
 
@@ -20,6 +21,8 @@ app.use('/tasks',   taskRoutes);
 
 // Support routes handle both /tasks/:id/support-requests and /support-requests/:id/*
 app.use('/', supportRoutes);
+// Attachment routes handle /tasks/:id/attachments and /attachments/:id
+app.use('/', attachmentRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'The requested resource does not exist.' }));
 

@@ -35,8 +35,9 @@ model User {
   groupMembers     GroupMember[]
   assignedTasks    Task[]           @relation("AssignedTasks")
   comments         Comment[]
-  supportRequests  SupportRequest[] @relation("StudentSupportRequests")
-  supportReplies   SupportReply[]   @relation("InstructorSupportReplies")
+  supportRequests      SupportRequest[] @relation("StudentSupportRequests")
+  supportReplies       SupportReply[]   @relation("InstructorSupportReplies")
+  uploadedAttachments  Attachment[]     @relation("UploadedAttachments")
 }
 
 model Course {
@@ -94,6 +95,7 @@ model Task {
 
   comments        Comment[]
   supportRequests SupportRequest[]
+  attachments     Attachment[]
 }
 
 model Comment {
@@ -121,6 +123,22 @@ model SupportRequest {
   author    User   @relation("StudentSupportRequests", fields: [authorId], references: [id])
 
   replies   SupportReply[]
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  fileName   String
+  fileKey    String
+  fileUrl    String
+  fileSize   Int
+  mimeType   String
+  createdAt  DateTime @default(now())
+
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  uploaderId String
+  uploader   User     @relation("UploadedAttachments", fields: [uploaderId], references: [id])
 }
 
 model SupportReply {

@@ -9,13 +9,21 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
-import { updateTask, deleteTask, getComments, addComment } from '@/api/tasks'
+import { updateTask, deleteTask, getComments, addComment, getAttachments, uploadAttachment, deleteAttachment } from '@/api/tasks'
 import { createSupportRequest, getSupportRequests, replySupportRequest, resolveRequest } from '@/api/support'
 import { toast } from 'sonner'
 
 function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i]
 }
 
 function initials(name) {
@@ -108,6 +116,9 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
   const [showSupportForm, setShowSupportForm] = useState(false)
   const [supportMessage, setSupportMessage] = useState('')
   const [supportLoading, setSupportLoading] = useState(false)
+  const [attachments, setAttachments] = useState([])
+  const [uploadLoading, setUploadLoading] = useState(false)
+  const [previewImage, setPreviewImage] = useState(null)
 
   useEffect(() => {
     if (!task || !open) return
@@ -123,9 +134,11 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
     Promise.all([
       getComments(task.id).catch(() => []),
       getSupportRequests(task.id).catch(() => []),
-    ]).then(([c, s]) => {
+      getAttachments(task.id).catch(() => []),
+    ]).then(([c, s, a]) => {
       setComments(c)
       setSupportRequests(s)
+      setAttachments(a)
     })
   }, [task, open])
 
@@ -190,6 +203,36 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
       toast.error(err.response?.data?.error ?? 'Failed to add comment')
     } finally {
       setCommentLoading(false)
+    }
+  }
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File must be under 10 MB')
+      return
+    }
+    setUploadLoading(true)
+    try {
+      const attachment = await uploadAttachment(task.id, file)
+      setAttachments((prev) => [attachment, ...prev])
+      toast.success('File uploaded')
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setUploadLoading(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleDeleteAttachment = async (attachmentId) => {
+    try {
+      await deleteAttachment(attachmentId)
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
+      toast.success('Attachment deleted')
+    } catch (err) {
+      toast.error(err.message)
     }
   }
 
@@ -381,6 +424,66 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
 
           <Separator />
 
+          {/* Attachments */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Attachments ({attachments.length})</h4>
+              <label>
+                <input type="file" className="hidden" onChange={handleUpload} disabled={uploadLoading} />
+                <span className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-7 px-3 cursor-pointer">
+                  {uploadLoading ? 'Uploading…' : 'Upload File'}
+                </span>
+              </label>
+            </div>
+            {attachments.length === 0 && (
+              <p className="text-xs text-muted-foreground">No attachments.</p>
+            )}
+            {attachments.map((a) => (
+              <div key={a.id} className="flex items-center justify-between border rounded p-2 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {a.mimeType?.startsWith('image/') && (
+                    <img
+                      src={a.fileUrl}
+                      alt=""
+                      className="h-8 w-8 object-cover rounded cursor-pointer shrink-0"
+                      onClick={() => setPreviewImage(a.fileUrl)}
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">{a.fileName}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatFileSize(a.fileSize)}
+                      {a.uploader && ` · ${a.uploader.name}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {a.mimeType?.startsWith('image/') && (
+                    <button
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => setPreviewImage(a.fileUrl)}
+                    >
+                      View
+                    </button>
+                  )}
+                  <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                    Download
+                  </a>
+                  {(a.uploaderId === user.id || isInstructor) && (
+                    <button
+                      className="text-xs text-destructive hover:underline"
+                      onClick={() => handleDeleteAttachment(a.id)}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Separator />
+
           {/* Support Requests */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -424,6 +527,15 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
           </div>
         </div>
       </DialogContent>
+
+      {/* Image preview dialog */}
+      {previewImage && (
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+          <DialogContent className="max-w-2xl p-2">
+            <img src={previewImage} alt="Preview" className="w-full h-auto rounded" />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   )
 }

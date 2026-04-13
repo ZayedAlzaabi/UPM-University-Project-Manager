@@ -25,5 +25,10 @@
   "MESSAGE_REQUIRED":        "Support request message cannot be empty.",
   "USER_ID_OR_EMAIL":        "Provide either a userId or an email.",
 
+  "ATTACHMENT_NOT_FOUND":    "Attachment not found.",
+  "FILE_REQUIRED":           "A file must be provided.",
+  "FILE_TOO_LARGE":          "File size must not exceed 10 MB.",
+  "FILE_TYPE_NOT_ALLOWED":   "This file type is not allowed.",
+
   "SERVER_ERROR":            "Something went wrong. Please try again."
 }

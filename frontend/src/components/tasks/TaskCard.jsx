@@ -2,6 +2,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { Paperclip } from 'lucide-react'
 
 function formatDate(iso) {
   if (!iso) return null
@@ -69,11 +70,19 @@ export default function TaskCard({ task, onClick }) {
           </div>
 
           <div className="flex items-center justify-between gap-1">
-            {task._count?.comments > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {task._count.comments} comment{task._count.comments !== 1 ? 's' : ''}
-              </p>
-            ) : <span />}
+            <div className="flex items-center gap-2">
+              {task._count?.comments > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {task._count.comments} comment{task._count.comments !== 1 ? 's' : ''}
+                </p>
+              )}
+              {task._count?.attachments > 0 && (
+                <div className="flex items-center gap-0.5 text-muted-foreground">
+                  <Paperclip className="h-3 w-3" />
+                  <span className="text-xs">{task._count.attachments}</span>
+                </div>
+              )}
+            </div>
             {task.updatedAt && (
               <span className="text-[10px] text-muted-foreground/70" title={new Date(task.updatedAt).toLocaleString()}>
                 {formatRelative(task.updatedAt)}

@@ -108,7 +108,10 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     getNotifications()
-      .then(setData)
+      .then((data) => {
+        setData(data)
+        localStorage.setItem(`lastNotificationViewedAt_${user.id}`, new Date().toISOString())
+      })
       .catch(() => toast.error('Failed to load notifications'))
       .finally(() => setLoading(false))
   }, [])
