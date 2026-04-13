@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { updateTask, deleteTask, getComments, addComment, getAttachments, uploadAttachment, deleteAttachment } from '@/api/tasks'
 import { createSupportRequest, getSupportRequests, replySupportRequest, resolveRequest } from '@/api/support'
 import { toast } from 'sonner'
+import { File, FileText, FileSpreadsheet, FileArchive, FileCode, FileImage } from 'lucide-react'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -24,6 +25,26 @@ function formatFileSize(bytes) {
   const sizes = ['B', 'KB', 'MB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i]
+}
+
+function FileIcon({ mimeType, className = 'h-8 w-8' }) {
+  const base = 'shrink-0 ' + className
+  if (!mimeType) return <File className={base + ' text-muted-foreground'} />
+  if (mimeType === 'application/pdf')
+    return <FileText className={base + ' text-red-500'} />
+  if (mimeType.includes('word') || mimeType.includes('document'))
+    return <FileText className={base + ' text-blue-500'} />
+  if (mimeType.includes('powerpoint') || mimeType.includes('presentation'))
+    return <FileText className={base + ' text-orange-500'} />
+  if (mimeType.includes('excel') || mimeType.includes('spreadsheet'))
+    return <FileSpreadsheet className={base + ' text-green-500'} />
+  if (mimeType.includes('zip') || mimeType.includes('archive'))
+    return <FileArchive className={base + ' text-yellow-500'} />
+  if (mimeType.startsWith('text/') || mimeType.includes('json'))
+    return <FileCode className={base + ' text-muted-foreground'} />
+  if (mimeType.startsWith('image/'))
+    return <FileImage className={base + ' text-purple-500'} />
+  return <File className={base + ' text-muted-foreground'} />
 }
 
 function initials(name) {
@@ -438,48 +459,57 @@ export default function TaskDialog({ task, open, onOpenChange, members, onUpdate
             {attachments.length === 0 && (
               <p className="text-xs text-muted-foreground">No attachments.</p>
             )}
-            {attachments.map((a) => (
-              <div key={a.id} className="flex items-center justify-between border rounded p-2 gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  {a.mimeType?.startsWith('image/') && (
-                    <img
-                      src={a.fileUrl}
-                      alt=""
-                      className="h-8 w-8 object-cover rounded cursor-pointer shrink-0"
-                      onClick={() => setPreviewImage(a.fileUrl)}
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">{a.fileName}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {formatFileSize(a.fileSize)}
-                      {a.uploader && ` · ${a.uploader.name}`}
-                    </p>
+            {attachments.map((a) => {
+              const isImage = a.mimeType?.startsWith('image/')
+              return (
+                <div key={a.id} className="flex items-center justify-between border rounded p-2 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {isImage ? (
+                      <img
+                        src={a.fileUrl}
+                        alt=""
+                        className="h-8 w-8 object-cover rounded cursor-pointer shrink-0"
+                        onClick={() => setPreviewImage(a.fileUrl)}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.nextSibling?.style && (e.currentTarget.nextSibling.style.display = 'block')
+                        }}
+                      />
+                    ) : (
+                      <FileIcon mimeType={a.mimeType} />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{a.fileName}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {formatFileSize(a.fileSize)}
+                        {a.uploader && ` · ${a.uploader.name}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isImage && (
+                      <button
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => setPreviewImage(a.fileUrl)}
+                      >
+                        View
+                      </button>
+                    )}
+                    <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                      Download
+                    </a>
+                    {(a.uploaderId === user.id || isInstructor) && (
+                      <button
+                        className="text-xs text-destructive hover:underline"
+                        onClick={() => handleDeleteAttachment(a.id)}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {a.mimeType?.startsWith('image/') && (
-                    <button
-                      className="text-xs text-primary hover:underline"
-                      onClick={() => setPreviewImage(a.fileUrl)}
-                    >
-                      View
-                    </button>
-                  )}
-                  <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                    Download
-                  </a>
-                  {(a.uploaderId === user.id || isInstructor) && (
-                    <button
-                      className="text-xs text-destructive hover:underline"
-                      onClick={() => handleDeleteAttachment(a.id)}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <Separator />
