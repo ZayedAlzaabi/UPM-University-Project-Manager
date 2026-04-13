@@ -1,0 +1,22 @@
+{
+  "name": "upm-backend",
+  "version": "1.0.0",
+  "description": "UPM - University Project Management REST API",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5",
+    "bcrypt": "^5",
+    "cors": "^2",
+    "dotenv": "^16",
+    "express": "^4",
+    "jsonwebtoken": "^9"
+  },
+  "devDependencies": {
+    "nodemon": "^3",
+    "prisma": "^5"
+  }
+}

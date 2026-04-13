@@ -1,0 +1,281 @@
+{
+  "info": {
+    "name": "UPM API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "token",   "value": "" },
+    { "key": "courseId","value": "" },
+    { "key": "groupId", "value": "" },
+    { "key": "taskId",  "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@uaeu.ac.ae\",\n  \"password\": \"secret123\",\n  \"role\": \"INSTRUCTOR\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('Token saved:', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@uaeu.ac.ae\",\n  \"password\": \"secret123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('Token saved:', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "List Courses",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/courses",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Web Applications\",\n  \"semester\": \"Spring\",\n  \"year\": 2026\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('courseId', json.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Course",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses/{{courseId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "List Groups in Course",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/courses/{{courseId}}/groups",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Create Group in Course",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/courses/{{courseId}}/groups",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Group Alpha\",\n  \"projectTitle\": \"UPM System\",\n  \"projectDesc\": \"A university project management tool\",\n  \"deadline\": \"2026-05-30T23:59:59.000Z\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('groupId', json.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Groups",
+      "item": [
+        {
+          "name": "Get Group",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/groups/{{groupId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Update Group (deadline etc.)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/groups/{{groupId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deadline\": \"2026-06-15T23:59:59.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Member to Group",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/groups/{{groupId}}/members",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@uaeu.ac.ae\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Tasks in Group",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/groups/{{groupId}}/tasks",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Create Task in Group",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/groups/{{groupId}}/tasks",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Set up backend\",\n  \"description\": \"Initialize Express + Prisma\",\n  \"status\": \"IN_PROGRESS\",\n  \"dueDate\": \"2026-04-20T23:59:59.000Z\",\n  \"assigneeId\": null\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('taskId', json.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/tasks/{{taskId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DONE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/tasks/{{taskId}}",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "List Comments on Task",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/tasks/{{taskId}}/comments",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Add Comment on Task",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/tasks/{{taskId}}/comments",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Great progress, please update the description too.\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

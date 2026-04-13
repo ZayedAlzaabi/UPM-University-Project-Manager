@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum SupportStatus {
+  OPEN
+  RESOLVED
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime      @default(now())
+
+  taughtCourses    Course[]         @relation("InstructorCourses")
+  groupMembers     GroupMember[]
+  assignedTasks    Task[]           @relation("AssignedTasks")
+  comments         Comment[]
+  supportRequests  SupportRequest[] @relation("StudentSupportRequests")
+  supportReplies   SupportReply[]   @relation("InstructorSupportReplies")
+}
+
+model Course {
+  id           String   @id @default(uuid())
+  name         String
+  semester     String
+  year         Int
+  createdAt    DateTime @default(now())
+
+  instructorId String
+  instructor   User     @relation("InstructorCourses", fields: [instructorId], references: [id])
+
+  groups       Group[]
+}
+
+model Group {
+  id             String    @id @default(uuid())
+  name           String
+  projectTitle   String
+  projectDesc    String?
+  deadline       DateTime?
+  createdAt      DateTime  @default(now())
+
+  courseId       String
+  course         Course        @relation(fields: [courseId], references: [id])
+
+  members        GroupMember[]
+  tasks          Task[]
+}
+
+model GroupMember {
+  groupId String
+  userId  String
+
+  group   Group  @relation(fields: [groupId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@id([groupId, userId])
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id])
+
+  assigneeId  String?
+  assignee    User?    @relation("AssignedTasks", fields: [assigneeId], references: [id])
+
+  comments        Comment[]
+  supportRequests SupportRequest[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  body      String
+  createdAt DateTime @default(now())
+
+  taskId    String
+  task      Task   @relation(fields: [taskId], references: [id])
+
+  authorId  String
+  author    User   @relation(fields: [authorId], references: [id])
+}
+
+model SupportRequest {
+  id        String        @id @default(uuid())
+  message   String
+  status    SupportStatus @default(OPEN)
+  createdAt DateTime      @default(now())
+
+  taskId    String
+  task      Task   @relation(fields: [taskId], references: [id])
+
+  authorId  String
+  author    User   @relation("StudentSupportRequests", fields: [authorId], references: [id])
+
+  replies   SupportReply[]
+}
+
+model SupportReply {
+  id        String   @id @default(uuid())
+  body      String
+  createdAt DateTime @default(now())
+
+  requestId String
+  request   SupportRequest @relation(fields: [requestId], references: [id])
+
+  authorId  String
+  author    User   @relation("InstructorSupportReplies", fields: [authorId], references: [id])
+}
