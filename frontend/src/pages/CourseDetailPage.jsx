@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getCourse, getCourseGroups } from '@/api/courses'
+import { deleteGroup } from '@/api/groups'
 import GroupCard from '@/components/groups/GroupCard'
 import CreateGroupDialog from '@/components/groups/CreateGroupDialog'
 import AddMemberDialog from '@/components/groups/AddMemberDialog'
@@ -32,6 +33,12 @@ export default function CourseDetailPage() {
     }
     load()
   }, [id])
+
+  const handleDeleteGroup = async (groupId) => {
+    await deleteGroup(groupId)
+    setGroups((prev) => prev.filter((g) => g.id !== groupId))
+    toast.success('Group deleted')
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
@@ -82,6 +89,7 @@ export default function CourseDetailPage() {
               group={g}
               courseName={course?.name}
               onAddMember={(group) => setMemberTarget(group)}
+              onDelete={handleDeleteGroup}
             />
           ))}
         </div>

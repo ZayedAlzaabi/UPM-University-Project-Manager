@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { getGroup, getGroupTasks } from '@/api/groups'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { getGroup, getGroupTasks, deleteGroup } from '@/api/groups'
 import { updateTask } from '@/api/tasks'
 import { useAuth } from '@/hooks/useAuth'
 import KanbanBoard from '@/components/tasks/KanbanBoard'
@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 function formatDate(iso) {
@@ -28,6 +30,7 @@ function initials(name) {
 export default function GroupDetailPage() {
   const { id } = useParams()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const isInstructor = user?.role === 'INSTRUCTOR'
 
   const [group, setGroup] = useState(null)
@@ -35,6 +38,8 @@ export default function GroupDetailPage() {
   const [loading, setLoading] = useState(true)
   const [selectedTask, setSelectedTask] = useState(null)
   const [showCreateTask, setShowCreateTask] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -62,6 +67,19 @@ export default function GroupDetailPage() {
 
   const handleTaskCreated = (task) => {
     setTasks((prev) => [...prev, task])
+  }
+
+  const handleDeleteGroup = async () => {
+    setDeleting(true)
+    try {
+      await deleteGroup(id)
+      toast.success('Group deleted')
+      navigate(`/courses/${group.course.id}`)
+    } catch {
+      toast.error('Failed to delete group')
+      setDeleting(false)
+      setShowDeleteConfirm(false)
+    }
   }
 
   const handleTaskStatusChange = async (task, newStatus) => {
@@ -104,9 +122,21 @@ export default function GroupDetailPage() {
               <p className="text-sm text-muted-foreground mt-1">{group.projectDesc}</p>
             )}
           </div>
-          <div className="text-right space-y-0.5">
-            <p className="text-xs text-muted-foreground">Deadline</p>
-            <p className="text-sm font-medium">{formatDate(group.deadline)}</p>
+          <div className="flex items-start gap-3">
+            <div className="text-right space-y-0.5">
+              <p className="text-xs text-muted-foreground">Deadline</p>
+              <p className="text-sm font-medium">{formatDate(group.deadline)}</p>
+            </div>
+            {isInstructor && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -169,6 +199,24 @@ export default function GroupDetailPage() {
         members={group.members ?? []}
         onCreated={handleTaskCreated}
       />
+
+      {/* Delete Group Confirmation */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete group?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete <span className="font-medium text-foreground">{group.name}</span> and all its tasks, members, and history. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteGroup} disabled={deleting}>
+              {deleting ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -101,6 +101,42 @@ router.get('/:id/tasks', authenticate, async (req, res) => {
   res.json(tasks);
 });
 
+// DELETE /groups/:id — instructor only, must own the course
+router.delete('/:id', authenticate, requireRole('INSTRUCTOR'), async (req, res, next) => {
+  try {
+    const groupId = req.params.id;
+    const group = await prisma.group.findUnique({ where: { id: groupId }, include: { course: true } });
+    if (!group) return res.status(404).json({ error: ERRORS.GROUP_NOT_FOUND });
+    if (group.course.instructorId !== req.user.id) return res.status(403).json({ error: ERRORS.FORBIDDEN });
+
+    await prisma.$transaction(async (tx) => {
+      const tasks = await tx.task.findMany({ where: { groupId }, select: { id: true } });
+      const taskIds = tasks.map((t) => t.id);
+
+      if (taskIds.length > 0) {
+        const supportRequests = await tx.supportRequest.findMany({
+          where: { taskId: { in: taskIds } },
+          select: { id: true },
+        });
+        const srIds = supportRequests.map((s) => s.id);
+        if (srIds.length > 0) {
+          await tx.supportReply.deleteMany({ where: { requestId: { in: srIds } } });
+          await tx.supportRequest.deleteMany({ where: { id: { in: srIds } } });
+        }
+        await tx.comment.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.task.deleteMany({ where: { groupId } }); // cascades: attachments, statusHistory
+      }
+
+      await tx.groupMember.deleteMany({ where: { groupId } });
+      await tx.group.delete({ where: { id: groupId } });
+    });
+
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /groups/:id/tasks — group members or course instructor
 router.post('/:id/tasks', authenticate, async (req, res) => {
   const groupId = req.params.id;
