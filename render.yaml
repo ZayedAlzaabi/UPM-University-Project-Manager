@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: upm-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: node src/index.js
+    autoDeploy: true

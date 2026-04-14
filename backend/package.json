@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "prisma migrate deploy && node src/index.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",
