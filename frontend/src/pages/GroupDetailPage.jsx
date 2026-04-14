@@ -7,6 +7,7 @@ import KanbanBoard from '@/components/tasks/KanbanBoard'
 import TaskDialog from '@/components/tasks/TaskDialog'
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog'
 import GroupProgressBar from '@/components/groups/GroupProgressBar'
+import GroupTimeline from '@/components/timeline/GroupTimeline'
 import GroupDetailSkeleton from '@/components/skeletons/GroupDetailSkeleton'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -143,6 +144,11 @@ export default function GroupDetailPage() {
           onTaskClick={setSelectedTask}
           onTaskStatusChange={handleTaskStatusChange}
         />
+      </div>
+
+      {/* Activity Timeline */}
+      <div className="space-y-4">
+        <GroupTimeline group={group} tasks={tasks} />
       </div>
 
       {/* Task Detail Dialog */}

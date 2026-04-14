@@ -12,7 +12,7 @@ router.get('/:id', authenticate, async (req, res) => {
     where: { id: groupId },
     include: {
       course: { include: { instructor: { select: { id: true, name: true, email: true } } } },
-      members: { include: { user: { select: { id: true, name: true, email: true, role: true } } } },
+      members: { include: { user: { select: { id: true, name: true, email: true, role: true } } }, orderBy: { createdAt: 'asc' } },
       _count: { select: { tasks: true } },
     },
   });

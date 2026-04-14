@@ -69,8 +69,9 @@ model Group {
 }
 
 model GroupMember {
-  groupId String
-  userId  String
+  groupId   String
+  userId    String
+  createdAt DateTime @default(now())
 
   group   Group  @relation(fields: [groupId], references: [id])
   user    User   @relation(fields: [userId], references: [id])
