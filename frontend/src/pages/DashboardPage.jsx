@@ -19,6 +19,8 @@ export default function DashboardPage() {
   const [showCreate, setShowCreate] = useState(false)
 
   useEffect(() => {
+    if (!user) return
+    setLoading(true)
     const load = async () => {
       try {
         const data = await getCourses()
@@ -41,7 +43,7 @@ export default function DashboardPage() {
       }
     }
     load()
-  }, [isInstructor])
+  }, [user?.id])
 
   const handleCourseCreated = (course) => {
     setCourses((prev) => [{ ...course, _count: { groups: 0 } }, ...prev])

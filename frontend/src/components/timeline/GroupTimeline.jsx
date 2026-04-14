@@ -77,7 +77,7 @@ export default function GroupTimeline({ group, tasks }) {
         <CardTitle className="text-base">Activity</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="max-h-96 overflow-y-auto pr-2">
+        <div className="max-h-96 overflow-y-auto pl-1 pr-2">
           {events.length === 0 ? (
             <p className="text-sm text-muted-foreground">No activity yet.</p>
           ) : (
