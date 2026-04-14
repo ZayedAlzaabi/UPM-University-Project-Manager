@@ -45,19 +45,37 @@ router.patch('/:id', authenticate, async (req, res) => {
     }
   }
 
-  const updated = await prisma.task.update({
-    where: { id: taskId },
-    data: {
-      ...(status !== undefined && { status }),
-      ...(title !== undefined && { title: title.trim() }),
-      ...(description !== undefined && { description: description?.trim() ?? null }),
-      ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
-      ...(assigneeId !== undefined && { assigneeId: assigneeId ?? null }),
-    },
-    include: {
-      assignee: { select: { id: true, name: true, email: true } },
-    },
+  const statusChanging = status !== undefined && status !== task.status;
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedTask = await tx.task.update({
+      where: { id: taskId },
+      data: {
+        ...(status !== undefined && { status }),
+        ...(title !== undefined && { title: title.trim() }),
+        ...(description !== undefined && { description: description?.trim() ?? null }),
+        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+        ...(assigneeId !== undefined && { assigneeId: assigneeId ?? null }),
+      },
+      include: {
+        assignee: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    if (statusChanging) {
+      await tx.taskStatusHistory.create({
+        data: {
+          taskId,
+          fromStatus: task.status,
+          toStatus: status,
+          changedById: req.user.id,
+        },
+      });
+    }
+
+    return updatedTask;
   });
+
   res.json(updated);
 });
 

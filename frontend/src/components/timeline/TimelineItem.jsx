@@ -1,4 +1,4 @@
-import { FolderOpen, UserPlus, ClipboardList, CheckCircle2 } from 'lucide-react'
+import { FolderOpen, UserPlus, ClipboardList, CheckCircle2, PlayCircle, RotateCcw } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 const EVENT_CONFIG = {
@@ -6,25 +6,31 @@ const EVENT_CONFIG = {
     Icon: FolderOpen,
     dotClass: 'bg-blue-500',
     iconClass: 'text-blue-500',
-    label: 'Group Created',
   },
   member_joined: {
     Icon: UserPlus,
     dotClass: 'bg-emerald-500',
     iconClass: 'text-emerald-500',
-    label: 'Member Joined',
   },
   task_created: {
     Icon: ClipboardList,
     dotClass: 'bg-violet-500',
     iconClass: 'text-violet-500',
-    label: 'Task Created',
+  },
+  task_started: {
+    Icon: PlayCircle,
+    dotClass: 'bg-amber-500',
+    iconClass: 'text-amber-500',
   },
   task_completed: {
     Icon: CheckCircle2,
     dotClass: 'bg-green-500',
     iconClass: 'text-green-500',
-    label: 'Task Completed',
+  },
+  task_returned: {
+    Icon: RotateCcw,
+    dotClass: 'bg-orange-500',
+    iconClass: 'text-orange-500',
   },
 }
 

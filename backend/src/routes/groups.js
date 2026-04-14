@@ -90,6 +90,10 @@ router.get('/:id/tasks', authenticate, async (req, res) => {
     where: { groupId },
     include: {
       assignee: { select: { id: true, name: true, email: true } },
+      statusHistory: {
+        include: { changedBy: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'asc' },
+      },
       _count: { select: { comments: true, attachments: true } },
     },
     orderBy: { createdAt: 'asc' },

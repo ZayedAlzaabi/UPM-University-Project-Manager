@@ -38,6 +38,7 @@ model User {
   supportRequests      SupportRequest[] @relation("StudentSupportRequests")
   supportReplies       SupportReply[]   @relation("InstructorSupportReplies")
   uploadedAttachments  Attachment[]     @relation("UploadedAttachments")
+  statusChanges        TaskStatusHistory[] @relation("StatusChangedBy")
 }
 
 model Course {
@@ -97,6 +98,20 @@ model Task {
   comments        Comment[]
   supportRequests SupportRequest[]
   attachments     Attachment[]
+  statusHistory   TaskStatusHistory[]
+}
+
+model TaskStatusHistory {
+  id         String     @id @default(uuid())
+  fromStatus TaskStatus
+  toStatus   TaskStatus
+  createdAt  DateTime   @default(now())
+
+  taskId      String
+  task        Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  changedById String
+  changedBy   User       @relation("StatusChangedBy", fields: [changedById], references: [id])
 }
 
 model Comment {

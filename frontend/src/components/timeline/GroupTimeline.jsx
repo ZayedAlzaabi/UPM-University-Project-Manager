@@ -22,6 +22,8 @@ function buildTimeline(group, tasks) {
     })
   })
 
+  const STATUS_LABEL = { TODO: 'To Do', IN_PROGRESS: 'In Progress', DONE: 'Completed' }
+
   tasks.forEach((task) => {
     events.push({
       type: 'task_created',
@@ -31,18 +33,36 @@ function buildTimeline(group, tasks) {
       data: { task },
     })
 
-    if (task.status === 'DONE') {
-      const diff = new Date(task.updatedAt) - new Date(task.createdAt)
-      if (diff > 2000) {
+    task.statusHistory?.forEach((entry) => {
+      const { fromStatus, toStatus, createdAt, changedBy } = entry
+      const by = changedBy?.name ? ` by ${changedBy.name}` : ''
+
+      if (fromStatus === 'DONE') {
+        events.push({
+          type: 'task_returned',
+          timestamp: createdAt,
+          title: `Has returned the task from Completed to ${STATUS_LABEL[toStatus]}`,
+          description: task.title + by,
+          data: { task },
+        })
+      } else if (toStatus === 'DONE') {
         events.push({
           type: 'task_completed',
-          timestamp: task.updatedAt,
+          timestamp: createdAt,
           title: 'Task completed',
-          description: task.title,
+          description: task.title + by,
+          data: { task },
+        })
+      } else if (fromStatus === 'TODO' && toStatus === 'IN_PROGRESS') {
+        events.push({
+          type: 'task_started',
+          timestamp: createdAt,
+          title: 'Task moved to In Progress',
+          description: task.title + by,
           data: { task },
         })
       }
-    }
+    })
   })
 
   return events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
