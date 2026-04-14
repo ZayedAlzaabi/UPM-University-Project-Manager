@@ -59,6 +59,10 @@ router.patch('/:id', authenticate, async (req, res) => {
       },
       include: {
         assignee: { select: { id: true, name: true, email: true } },
+        statusHistory: {
+          include: { changedBy: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 

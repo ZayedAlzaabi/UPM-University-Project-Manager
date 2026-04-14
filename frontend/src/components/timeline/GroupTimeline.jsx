@@ -77,19 +77,21 @@ export default function GroupTimeline({ group, tasks }) {
         <CardTitle className="text-base">Activity</CardTitle>
       </CardHeader>
       <CardContent>
-        {events.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No activity yet.</p>
-        ) : (
-          <div>
-            {events.map((event, i) => (
-              <TimelineItem
-                key={`${event.type}-${event.timestamp}-${i}`}
-                event={event}
-                isLast={i === events.length - 1}
-              />
-            ))}
-          </div>
-        )}
+        <div className="max-h-96 overflow-y-auto pr-2">
+          {events.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity yet.</p>
+          ) : (
+            <div>
+              {events.map((event, i) => (
+                <TimelineItem
+                  key={`${event.type}-${event.timestamp}-${i}`}
+                  event={event}
+                  isLast={i === events.length - 1}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
