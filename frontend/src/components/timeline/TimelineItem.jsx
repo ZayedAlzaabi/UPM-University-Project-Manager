@@ -70,33 +70,33 @@ export default function TimelineItem({ event, isLast }) {
   const isMember = event.type === 'member_joined'
 
   return (
-    <div className="flex gap-3 min-h-[3rem]">
+    <div className="flex gap-4 min-h-[3rem]">
       {/* Left: dot + connector line */}
       <div className="relative flex flex-col items-center">
-        <div className={`z-10 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${dotClass} bg-opacity-15 ring-2 ring-offset-2 ring-offset-background`}
+        <div className={`z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${dotClass} bg-opacity-15 ring-2 ring-offset-2 ring-offset-background`}
           style={{ ringColor: 'currentColor' }}>
-          <Icon className={`h-3.5 w-3.5 ${iconClass}`} />
+          <Icon className={`h-4 w-4 ${iconClass}`} />
         </div>
         {!isLast && (
-          <div className="mt-1 w-px flex-1 bg-border" />
+          <div className="mt-2 w-px flex-1 bg-border" />
         )}
       </div>
 
       {/* Right: event content */}
-      <div className={`flex flex-col gap-0.5 ${isLast ? '' : 'pb-5'}`}>
+      <div className={`flex flex-col gap-1 pt-1 ${isLast ? 'pb-1' : 'pb-6'}`}>
         <div className="flex items-center gap-2 flex-wrap">
           {isMember && event.data?.user && (
             <Avatar className="h-5 w-5">
               <AvatarFallback className="text-[10px]">{initials(event.data.user.name)}</AvatarFallback>
             </Avatar>
           )}
-          <span className="text-sm font-medium leading-none">{event.title}</span>
+          <span className="text-sm font-medium leading-snug">{event.title}</span>
         </div>
         {event.description && (
           <p className="text-xs text-muted-foreground">{event.description}</p>
         )}
         <p
-          className="text-[11px] text-muted-foreground/70 mt-0.5"
+          className="text-[11px] text-muted-foreground/60 mt-0.5"
           title={formatFull(date)}
         >
           {formatRelative(date)}

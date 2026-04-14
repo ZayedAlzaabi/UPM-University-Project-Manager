@@ -48,7 +48,18 @@ router.patch('/:id', authenticate, async (req, res) => {
   const statusChanging = status !== undefined && status !== task.status;
 
   const updated = await prisma.$transaction(async (tx) => {
-    const updatedTask = await tx.task.update({
+    if (statusChanging) {
+      await tx.taskStatusHistory.create({
+        data: {
+          taskId,
+          fromStatus: task.status,
+          toStatus: status,
+          changedById: req.user.id,
+        },
+      });
+    }
+
+    return tx.task.update({
       where: { id: taskId },
       data: {
         ...(status !== undefined && { status }),
@@ -65,19 +76,6 @@ router.patch('/:id', authenticate, async (req, res) => {
         },
       },
     });
-
-    if (statusChanging) {
-      await tx.taskStatusHistory.create({
-        data: {
-          taskId,
-          fromStatus: task.status,
-          toStatus: status,
-          changedById: req.user.id,
-        },
-      });
-    }
-
-    return updatedTask;
   });
 
   res.json(updated);
