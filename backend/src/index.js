@@ -14,6 +14,8 @@ const app = express();
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json());
 
+app.get('/', (req, res) => res.json({ status: 'ok' }));
+
 app.use('/auth',    authRoutes);
 app.use('/courses', courseRoutes);
 app.use('/groups',  groupRoutes);
