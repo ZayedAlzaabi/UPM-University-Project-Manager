@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from 'next-themes'
 import { AuthProvider } from '@/context/AuthContext'
@@ -12,6 +13,7 @@ import CourseDetailPage from '@/pages/CourseDetailPage'
 import GroupDetailPage from '@/pages/GroupDetailPage'
 import NotificationsPage from '@/pages/NotificationsPage'
 import HistoryPage from '@/pages/HistoryPage'
+import client from '@/api/client'
 
 function Layout({ children }) {
   return (
@@ -23,6 +25,9 @@ function Layout({ children }) {
 }
 
 export default function App() {
+  // Ping the backend on app load so Render wakes from sleep before the user hits a data page
+  useEffect(() => { client.get('/').catch(() => {}) }, [])
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <AuthProvider>
