@@ -109,7 +109,16 @@ export default function CourseDetailPage() {
               onOpenChange={(v) => { if (!v) setMemberTarget(null) }}
               groupId={memberTarget.id}
               groupName={memberTarget.name}
-              onAdded={() => setMemberTarget(null)}
+              onAdded={() => {
+                setGroups((prev) =>
+                  prev.map((g) =>
+                    g.id === memberTarget.id
+                      ? { ...g, _count: { ...g._count, members: g._count.members + 1 } }
+                      : g
+                  )
+                )
+                setMemberTarget(null)
+              }}
             />
           )}
         </>
