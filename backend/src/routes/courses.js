@@ -74,8 +74,13 @@ router.get('/:id/groups', authenticate, async (req, res) => {
   if (!course) return res.status(404).json({ error: ERRORS.COURSE_NOT_FOUND });
   if (!(await canAccessCourse(req.user, courseId))) return res.status(403).json({ error: ERRORS.FORBIDDEN });
 
+  const groupWhere =
+    req.user.role === 'STUDENT'
+      ? { courseId, members: { some: { userId: req.user.id } } }
+      : { courseId };
+
   const groups = await prisma.group.findMany({
-    where: { courseId },
+    where: groupWhere,
     include: {
       _count: { select: { members: true, tasks: true } },
       tasks: { select: { status: true } },
